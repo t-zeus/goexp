@@ -76,7 +76,7 @@ func (rs *Rows) Close() error
 
 为什么需要手动 `defer` 关闭它呢？
 
-> 如果不 Close，这个 row 就一直保持着与当前 connection pool 中的 sql 连接的依赖关系，连接也就不会被释放。最终导致资源不必要的堆积，甚至崩溃。
+> 如果并没有正常的循环而因其他错误导致退出了循环，这个 row 就一直保持着与当前 connection pool 中的 sql 连接的依赖关系，连接也就不会被释放。最终导致资源不必要的堆积，甚至崩溃。
 
 #### func (*Rows) Next
 
@@ -118,12 +118,27 @@ if err != nil {
 defer db.Close()
 
 // SELECT
+rows, err := db.Query("select name from user")
+if err != nil {
+    panic(err)
+}
+defer rows.Close()
+names := make([]string, 0)
+for rows.Next() {
+    var name string
+    if err := rows.Scan(&name); err != nil {
+    	panic(err)
+    }
+    names = append(names, name)
+}
+if err := rows.Err(); err != nil {
+    panic(err)
+}
+fmt.Println(err)
 
 ```
 
 DSN 配置详情：https://github.com/go-sql-driver/mysql#dsn-data-source-name
-
-Query 步骤：
 
 
 
